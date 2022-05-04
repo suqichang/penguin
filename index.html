@@ -3,9 +3,89 @@
 <head>
 <meta charset="utf-8">
 <title>Welcome to My Home Page ~ S M K</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>DHT11温湿度WEB显示</title>
+<!--    <script src="{{ url_for('static', filename=('js/jquery-3.1.1.min.js')) }}"></script>-->
+    <script src="static/js/echarts.min.js"></script>
+    <script src="static/js/sdk.min.js"></script>
+    <script src="static/js/date.js"></script>
+<!--    <script src="{{ url_for('static', filename=('js/echarts.min.js')) }}"></script>-->
 </head>
 <body>
-    <h2>您好呀~</h2>
-    <p>念念及你，念念如你，不及你</p>
+<div id="main" style="width: 1200px;height:400px;"></div>
+<script type="text/javascript">
+    // 基于准备好的dom，初始化echarts实例
+    var myChart = echarts.init(document.getElementById('main'));
+
+    var api = new OneNetApi('JtM6haSUCbVfuALj7uVV=BGLBOQ=');
+
+    var day1 = new Date();
+    day1.setTime(day1.getTime()-24*60*60*1000);
+    start = day1.Format("yyyy-MM-dd hh:mm:ss").replace(" ","T");
+    end = new Date().Format("yyyy-MM-dd hh:mm:ss").replace(" ","T");
+
+    // 指定图表的配置项和数据
+    var option = {
+        title: {
+            text: 'alpha数据展示'
+        },
+        tooltip: {},
+        legend: {
+            data:[]
+        },
+        xAxis: {
+            name: "时间",
+            data: []
+        },
+        yAxis: {},
+        series: []
+    };
+    /**
+     * 读取设备多个数据流
+     * api.getDataStreams(设备id)
+     * */
+    api.getDataStreams(921549466).done(function(data){
+        console.log('api调用完成，服务器返回data为0：', data);
+    });
+
+
+    /**
+     * 获取数据点
+     * api.getDataPoints(设备id, 参数)
+     * 参数为一个json对象，可以设置各个读取参数，参数列表参考http://open.iot.10086.cn/apidoc/datapoint/view.html
+     * */
+    api.getDataPoints(921549466, {datastream_id:'alpha', 'start':start, 'end':end}).done(function(data){
+        var humSeriesData = []
+        var tempSeriesData = []
+        var timeData = []
+        var listData = data.data['datastreams'][0]['datapoints']
+        console.log(listData)
+        for(var i = 0; i < listData.length; i++) {
+            humSeriesData.push(listData[i]["value"]["hum"])
+            tempSeriesData.push(listData[i]["value"]["temp"])
+            timeData.push(listData[i]["at"])
+        }
+        var seriesData = [
+            {name: "hum", type: 'line',data: humSeriesData},
+            {name: "temp", type: 'line',data: tempSeriesData},
+        ]
+        option.xAxis.data = timeData
+        option.legend.data = ["hum", "temp"]
+        option.series = seriesData
+        // 使用刚指定的配置项和数据显示图表。
+        myChart.setOption(option);
+    });
+
+
+    /**
+     * 发送命令
+     * api.sendCommand(设备id, 命令内容) 命令内容参考http://open.iot.10086.cn/apidoc/cmd/create.html
+     * */
+    api.sendCommand(921549466, '100').done(function(data){
+        console.log('api调用完成，服务器返回data为2：', data);
+    });
+
+</script>
+
 </body>
 </html>
